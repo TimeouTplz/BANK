@@ -1,1 +1,43 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
 
+participant "Источник\n(ИБ, И32)" as Source
+participant "Диспетчер\nПостановки" as PlaceDisp
+participant "Буфер\n(Д1031)" as Buffer
+participant "Диспетчер\nВыбора" as SelectDisp
+participant "Планировщик\nПриборов" as Scheduler
+participant "Прибор\n(П31)" as Device
+
+Source -> PlaceDisp: Новая заявка (транзакция)
+note right of PlaceDisp: И32: Равномерный закон генерации\nИБ: Бесконечный поток
+
+PlaceDisp -> Buffer: Проверить наличие свободного места
+note right of Buffer: Д1031: Поиск места "по кольцу"\n(от последнего занятого слота)
+
+Buffer --> PlaceDisp: Свободное место найдено (слот N)
+
+PlaceDisp -> Buffer: addRequest(Заявка)
+Buffer --> PlaceDisp: Заявка добавлена
+
+== Прибор освободился (триггер) ==
+
+Device -> SelectDisp: Прибор свободен
+note right of SelectDisp: Д2П2: Выбор прибора "по кольцу"
+
+SelectDisp -> Buffer: selectRequest()
+note right of SelectDisp: Д2Б4: Приоритет по номеру источника\n(по одной заявке)
+
+Buffer --> SelectDisp: Возвращаем заявку с высшим приоритетом
+
+SelectDisp -> Scheduler: Найти свободный прибор
+Scheduler --> SelectDisp: Прибор №1 свободен
+
+SelectDisp -> Device: processRequest(Заявка)
+
+Device -> Device: Обработка транзакции
+note right of Device: П31: Экспоненциальное время обслуживания
+
+Device --> SelectDisp: Заявка обработана, прибор свободен
+
+@enduml
