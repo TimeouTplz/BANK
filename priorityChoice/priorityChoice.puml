@@ -1,1 +1,34 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
 
+participant "Диспетчер\nВыбора" as SelectDisp
+participant "Буфер\n(Д1031)" as Buffer
+participant "Прибор\n(П31)" as Device
+
+title Сценарий 4: Приоритетный выбор заявки (Д2Б4)
+
+note over Buffer: В буфере лежат заявки:\n- Источник 1 (высший приоритет)\n- Источник 1 (высший приоритет)\n- Источник 2 (низший приоритет)\n- Источник 3 (низший приоритет)
+
+Device -> SelectDisp: Прибор свободен
+
+SelectDisp -> Buffer: selectRequest()
+note right of SelectDisp: Д2Б4: Приоритет по номеру источника\nВыбираем заявку от Источника 1\n(по одной заявке за раз)
+
+Buffer --> SelectDisp: Заявка от Источника 1 (высший приоритет)
+
+SelectDisp -> Device: processRequest(Заявка от Источника 1)
+
+note over Buffer: Заявки от Источников 2 и 3\nостаются ждать в буфере
+
+Device -> Device: Обработка (П31)
+Device --> SelectDisp: Готово
+
+SelectDisp -> Buffer: selectRequest()
+Buffer --> SelectDisp: Заявка от Источника 1 (снова высший приоритет)
+
+SelectDisp -> Device: processRequest(Заявка от Источника 1)
+
+note over Buffer: Только когда заявки от Источника 1\nзакончатся, Диспетчер перейдёт\nк Источнику 2
+
+@enduml
