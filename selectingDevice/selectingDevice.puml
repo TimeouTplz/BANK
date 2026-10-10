@@ -1,1 +1,39 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
 
+participant "Диспетчер\nВыбора" as SelectDisp
+participant "Планировщик\nПриборов" as Scheduler
+participant "Прибор 1\n(П31)" as Device1
+participant "Прибор 2\n(П31)" as Device2
+participant "Прибор 3\n(П31)" as Device3
+
+title Сценарий 5: Выбор прибора "по кольцу" (Д2П2)
+
+note over Scheduler: Указатель прибора = 1
+
+SelectDisp -> Scheduler: Найти свободный прибор
+
+Scheduler -> Device1: Проверить занятость
+Device1 --> Scheduler: Занят
+
+Scheduler -> Device2: Проверить занятость
+Device2 --> Scheduler: Свободен
+
+note right of Scheduler: Д2П2: Поиск "по кольцу"\nСледующий поиск начнётся с Прибора 3
+
+Scheduler --> SelectDisp: Прибор №2 свободен
+
+SelectDisp -> Device2: processRequest(Заявка)
+Device2 --> SelectDisp: Заявка принята
+
+== Следующая заявка ==
+
+note over Scheduler: Указатель прибора = 3
+
+SelectDisp -> Scheduler: Найти свободный прибор
+Scheduler -> Device3: Проверить занятость
+Device3 --> Scheduler: Свободен
+Scheduler --> SelectDisp: Прибор №3 свободен
+
+@enduml
