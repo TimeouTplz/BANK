@@ -1,1 +1,166 @@
+@startuml
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classBackgroundColor #FEFECE
+skinparam noteBackgroundColor #FBFB77
 
+class Request {
+    - id: int
+    - sourceId: int
+    - priority: int
+    - generationTime: double
+    - arrivalTime: double
+    - serviceStartTime: double
+    - serviceEndTime: double
+    --
+    + getId(): int
+    + getSourceId(): int
+    + getPriority(): int
+    + getGenerationTime(): double
+    + getArrivalTime(): double
+    + setServiceStartTime(double): void
+    + setServiceEndTime(double): void
+    + getWaitingTime(): double
+    + getServiceTime(): double
+}
+note right of Request
+  Заявка (транзакция).
+  Содержит ID источника,
+  приоритет и временные метки
+  для сбора статистики.
+end note
+
+class Source {
+    - id: int
+    - priority: int
+    - meanInterval: double
+    - generatedCount: int
+    - rejectedCount: int
+    --
+    + generateRequest(): Request
+    + getId(): int
+    + getPriority(): int
+    + getMeanInterval(): double
+    + incrementGenerated(): void
+    + incrementRejected(): void
+    + getGeneratedCount(): int
+    + getRejectedCount(): int
+}
+note right of Source
+  Источник заявок.
+  ИБ - бесконечный,
+  И32 - равномерный закон
+  генерации заявок.
+end note
+
+class Buffer {
+    - capacity: int
+    - slots: List<Request>
+    - pointer: int
+    - currentSize: int
+    --
+    + addRequest(Request): bool
+    + removeLastRequest(): Request
+    + selectRequest(): Request
+    + findFreeSlotRing(): int
+    + isFull(): bool
+    + isEmpty(): bool
+    + getSize(): int
+    + getPointer(): int
+}
+note right of Buffer
+  Буферная память.
+  Д1031 - заполнение
+  "по кольцу".
+  Д1004 - выбивание
+  последней заявки.
+end note
+
+class PlacementDispatcher {
+    - buffer: Buffer
+    - reject: Reject
+    --
+    + placeRequest(Request): void
+    + handleOverflow(Request): void
+}
+note right of PlacementDispatcher
+  Диспетчер постановки.
+  Реализует Д1031 (постановка)
+  и Д1004 (отказ - выбивание
+  последней заявки).
+end note
+
+class SelectionDispatcher {
+    - buffer: Buffer
+    - scheduler: DeviceScheduler
+    --
+    + selectRequest(): void
+    + onDeviceFree(): void
+}
+note right of SelectionDispatcher
+  Диспетчер выбора.
+  Реализует Д2Б4 (приоритет
+  по номеру источника,
+  по одной заявке).
+end note
+
+class DeviceScheduler {
+    - devices: List<Device>
+    - pointer: int
+    --
+    + findFreeDevice(): Device
+    + getPointer(): int
+    + setPointer(int): void
+}
+note right of DeviceScheduler
+  Планировщик приборов.
+  Реализует Д2П2 - выбор
+  прибора "по кольцу"
+  (Round Robin).
+end note
+
+class Device {
+    - id: int
+    - isBusy: bool
+    - currentRequest: Request
+    - busyTime: double
+    - processedCount: int
+    --
+    + processRequest(Request): void
+    + isFree(): bool
+    + getId(): int
+    + getBusyTime(): double
+    + getProcessedCount(): int
+    + setBusy(bool): void
+}
+note right of Device
+  Прибор (сервер).
+  П31 - экспоненциальное
+  время обслуживания.
+end note
+
+class Reject {
+    - rejectedCount: int
+    - rejectedRequests: List<Request>
+    --
+    + addRejectedRequest(Request): void
+    + getCount(): int
+    + getRejectedBySource(int): int
+}
+note right of Reject
+  Счётчик отказов.
+  Хранит статистику
+  по каждому источнику.
+end note
+
+Source "1" --> "*" Request : создаёт >
+PlacementDispatcher "1" --> "1" Buffer : использует >
+PlacementDispatcher "1" --> "1" Reject : отправляет >
+SelectionDispatcher "1" --> "1" Buffer : использует >
+SelectionDispatcher "1" --> "1" DeviceScheduler : использует >
+DeviceScheduler "1" --> "*" Device : управляет >
+Buffer "1" o-- "*" Request : хранит >
+Device "1" --> "1" Request : обрабатывает >
+
+@enduml
