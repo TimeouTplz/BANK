@@ -1,1 +1,33 @@
+@startuml
+skinparam style strictuml
+skinparam sequenceMessageAlign center
 
+participant "Источник\n(ИБ, И32)" as Source
+participant "Диспетчер\nПостановки" as PlaceDisp
+participant "Буфер\n(Д1031)" as Buffer
+participant "Прибор 1\n(П31)" as Device1
+participant "Прибор 2\n(П31)" as Device2
+
+title Сценарий 3: Все приборы заняты (Заявка ожидает в буфере)
+
+Source -> PlaceDisp: Новая заявка (транзакция)
+PlaceDisp -> Buffer: Проверить наличие свободного места
+Buffer --> PlaceDisp: Место есть (Д1031)
+PlaceDisp -> Buffer: addRequest(Заявка)
+Buffer --> PlaceDisp: Заявка добавлена
+
+== Все приборы заняты ==
+
+Device1 -> Device1: Обработка заявки (П31)
+Device2 -> Device2: Обработка заявки (П31)
+
+note over Buffer: Заявка ожидает в буфере\nпока не освободится прибор
+
+loop Пока все приборы заняты
+    note over Buffer: Ожидание...
+end
+
+Device1 --> PlaceDisp: Прибор 1 освободился
+note right of PlaceDisp: Триггер для Диспетчера выбора
+
+@enduml
