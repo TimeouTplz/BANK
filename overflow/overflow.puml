@@ -5,7 +5,6 @@ skinparam sequenceMessageAlign center
 participant "Источник\n(ИБ, И32)" as Source
 participant "Диспетчер\nПостановки" as PlaceDisp
 participant "Буфер\n(Д1031)" as Buffer
-participant "Отказ" as Reject
 
 title Сценарий 2: Переполнение буфера (Д1004 - выбивание последней заявки)
 
@@ -21,8 +20,7 @@ alt Буфер переполнен
     PlaceDisp -> Buffer: removeLastRequest()
     Buffer --> PlaceDisp: Выбитая заявка
     
-    PlaceDisp -> Reject: Заявка аннулирована (отказ)
-    note right of Reject: Счётчик отказов +1\nдля источника выбитой заявки
+    note right of PlaceDisp: Выбитая заявка помечается как ОТКАЗ\n(счётчик отказов +1 для источника\nвыбитой заявки, заявка аннулируется)
     
     PlaceDisp -> Buffer: addRequest(Новая заявка)
     Buffer --> PlaceDisp: Новая заявка заняла освободившееся место
